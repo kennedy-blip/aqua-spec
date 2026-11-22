@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AQUA-SPECTRA">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#06B6D4"/>
+      <stop offset="0.55" stop-color="#0EA5E9"/>
+      <stop offset="1" stop-color="#10B981"/>
+    </linearGradient>
+    <radialGradient id="spec" cx="0.34" cy="0.28" r="0.6">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="#030914"/>
+  <path d="M32 9c0 0 15 15.6 15 26.2A15 15 0 0 1 17 35.2C17 24.6 32 9 32 9z" fill="url(#g)"/>
+  <ellipse cx="25" cy="28" rx="7" ry="9" fill="url(#spec)"/>
+  <path d="M20 40.5c3.2 0 3.2 2.4 6.4 2.4s3.2-2.4 6.4-2.4 3.2 2.4 6.4 2.4 3.2-2.4 6.4-2.4" fill="none" stroke="#e8f9ff" stroke-width="2.2" stroke-linecap="round" opacity="0.9"/>
+</svg>

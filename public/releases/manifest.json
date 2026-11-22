@@ -1,0 +1,11 @@
+{
+  "version": "v1.0.0",
+  "abi": "universal WebView (pending Android build)",
+  "buildId": "awaiting-ci",
+  "builtAt": "2026-11-22T00:00:00.000Z",
+  "bytes": 0,
+  "sha256": "",
+  "minSdk": 23,
+  "targetSdk": 34,
+  "engine": "Lit 3.2 + AssemblyScript + Elixir mirror + Datalog + GLSL"
+}

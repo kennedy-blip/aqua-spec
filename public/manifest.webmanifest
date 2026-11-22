@@ -1,0 +1,27 @@
+{
+  "name": "AQUA-SPECTRA · Polyglot Hydro-Optical Water Laboratory",
+  "short_name": "AquaSpectra",
+  "description": "Optical Tyndall nephelometer, CIEDE2000 strip colorimeter, Langelier corrosion lab, acoustic flow gauge and off-grid purification architect — fully offline.",
+  "id": "/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "any",
+  "background_color": "#030914",
+  "theme_color": "#030914",
+  "categories": ["utilities", "medical", "productivity"],
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "./favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "shortcuts": [
+    { "name": "Tyndall NTU scan", "url": "./#optics", "description": "Open the optical nephelometer" },
+    { "name": "Acoustic pour gauge", "url": "./#acoustic", "description": "Open the Helmholtz fill gauge" },
+    { "name": "Emergency purification", "url": "./#purification", "description": "Bleach dosage and boil curves" }
+  ]
+}

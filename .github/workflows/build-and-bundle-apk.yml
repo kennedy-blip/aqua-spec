@@ -1,0 +1,36 @@
+name: Build Android and web bundle
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, "arena/13ab9d29-aqua-spec"]
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:wasm
+      - run: npm run build:apk
+      - name: Verify APK signature and package
+        run: |
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose public/releases/aquaspectra-release.apk
+          unzip -l public/releases/aquaspectra-release.apk | grep classes.dex
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AquaSpectra-HydroLab-v1.0.0
+          path: |
+            public/releases/
+            dist/
+          retention-days: 30
