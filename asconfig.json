@@ -1,0 +1,28 @@
+{
+  "targets": {
+    "release": {
+      "outFile": "assembly/build/nephelometry_dsp.wasm",
+      "textFile": "assembly/build/nephelometry_dsp.wat",
+      "sourceMap": false,
+      "optimizeLevel": 3,
+      "shrinkLevel": 1,
+      "converge": false,
+      "noAssert": false,
+      "runtime": "stub",
+      "exportRuntime": false,
+      "use": "Math=NativeMath",
+      "debug": false
+    }
+  },
+  "options": {
+    "bindings": false,
+    "exportRuntime": false,
+    "runtime": "stub",
+    "noAssert": false,
+    "importMemory": false,
+    "memoryBase": 0,
+    "initialMemory": 2,
+    "stackSize": 16384,
+    "lowMemoryLimit": 0
+  }
+}

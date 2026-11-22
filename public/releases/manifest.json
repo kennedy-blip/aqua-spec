@@ -1,0 +1,13 @@
+{
+  "version": "v1.0.0",
+  "abi": "universal WebView",
+  "buildId": "92b254eab9ee0adeecd6f1d2c0ce05dc1ecbdc21",
+  "builtAt": "2026-11-22T09:29:22.103Z",
+  "bytes": 4041725,
+  "sha256": "57cd9a7f56faebe6239ae9162dd28da4b90b777778ee41ef5e35bf42e5fe3f1f",
+  "url": "./releases/aquaspectra-release.apk",
+  "minSdk": 22,
+  "targetSdk": 34,
+  "engine": "Lit 3.2 + AssemblyScript + Elixir mirror + Datalog + GLSL",
+  "signing": "development debug signature; not a Play Store release"
+}

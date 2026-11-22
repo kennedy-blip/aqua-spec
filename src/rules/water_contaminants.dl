@@ -1,0 +1,165 @@
+% ═════════════════════════════════════════════════════════════════════════════
+% AQUA-SPECTRA — src/rules/water_contaminants.dl
+%
+% Declarative water-risk knowledge base. Evaluated to a fixpoint by the
+% in-browser engine (src/logic/datalog.ts) every time a scanner produces a
+% reading. Facts are asserted from optics + chemistry; rules derive hazards,
+% then a second stratum derives the routing action and seal level.
+%
+% Syntax supported by the engine:
+%   fact p("a", 1, 2.5).              rule h(X, Y) :- p(X, Z), Z > 1.
+%   rule h(X, "text") :- ...          not q(X)    (stratified negation)
+%   Comparisons: < <= > >= = !=      Wildcard: _      Comments: % …
+% ═════════════════════════════════════════════════════════════════════════════
+
+% ── strata 0: raw measurements (asserted by the scanners) ────────────────────
+fact reading("alpine", ntu, 0.35).
+fact reading("alpine", ph, 7.3).
+fact derived("alpine", hardness, 65).
+fact reading("alpine", lsi, -0.05).
+
+% sample metadata — never asserted by the optics, always by the simulator
+fact source("alpine", "Filtered municipal tap / alpine spring").
+fact plumbing("alpine", "copper").
+fact occupancy("alpine", "daily").
+
+% ── strata 1: derived physico-chemical properties ─────────────────────────────
+
+% Corrosive water dissolves the passivating CaCO3 film, exposing bare metal.
+rule water_state(S, "corrosive") :-
+    reading(S, lsi, L), L < -0.5.
+
+rule water_state(S, "scale_forming") :-
+    reading(S, lsi, L), L > 0.5.
+
+rule water_state(S, "equilibrium") :-
+    reading(S, lsi, L), L >= -0.5, L <= 0.5.
+
+% Turbidity tiers, matched to EPA 40 CFR 141.13 / WHO GDWQ.
+rule turbidity_tier(S, "ideal") :- reading(S, ntu, N), N < 1.0.
+rule turbidity_tier(S, "filter") :- reading(S, ntu, N), N >= 1.0, N <= 5.0.
+rule turbidity_tier(S, "pathogen_shield") :- reading(S, ntu, N), N > 5.0, N <= 25.0.
+rule turbidity_tier(S, "gross") :- reading(S, ntu, N), N > 25.0.
+
+% Nitrate above the 10 mg/L MCL is an acute infant methaemoglobinaemia risk.
+rule nitrate_level(S, "mcl_exceeded") :- reading(S, nitrate, V), V > 10.0.
+rule nitrate_level(S, "elevated") :- reading(S, nitrate, V), V > 5.0, V <= 10.0.
+
+rule hardness_level(S, "very_hard") :- derived(S, hardness, H), H > 300.
+rule hardness_level(S, "hard") :- derived(S, hardness, H), H > 180, H <= 300.
+
+% ── strata 2: hazard inference ───────────────────────────────────────────────
+
+rule inferred_hazard(S, "Lead & Copper Pipe Leaching", "CRITICAL") :-
+    water_state(S, "corrosive"),
+    plumbing(S, "lead").
+rule inferred_hazard(S, "Lead & Copper Pipe Leaching", "CRITICAL") :-
+    water_state(S, "corrosive"),
+    plumbing(S, "copper"),
+    reading(S, ph, P), P < 6.5.
+rule inferred_hazard(S, "Lead & Copper Pipe Leaching", "CRITICAL") :-
+    water_state(S, "corrosive"),
+    plumbing(S, "galvanised"),
+    reading(S, ph, P), P < 6.8.
+rule inferred_hazard(S, "Plumbosolvency (unknown plumbing)", "HIGH") :-
+    water_state(S, "corrosive"),
+    plumbing(S, "unknown").
+rule inferred_hazard(S, "Premature Appliance Corrosion", "MODERATE") :-
+    water_state(S, "corrosive"),
+    plumbing(S, "pex").
+
+rule inferred_hazard(S, "Agricultural Nitrate Runoff", "CRITICAL") :-
+    nitrate_level(S, "mcl_exceeded").
+rule inferred_hazard(S, "Agricultural Nitrate Runoff", "HIGH") :-
+    nitrate_level(S, "elevated"),
+    source(S, "shallow well").
+
+rule inferred_hazard(S, "Pathogen Shielding (Crypto/Giardia)", "CRITICAL") :-
+    turbidity_tier(S, "gross").
+rule inferred_hazard(S, "Pathogen Shielding (Crypto/Giardia)", "HIGH") :-
+    turbidity_tier(S, "pathogen_shield"),
+    reading(S, chlorine, C), C < 0.2.
+rule inferred_hazard(S, "Sediment & Filter Loading", "MODERATE") :-
+    turbidity_tier(S, "pathogen_shield").
+
+rule inferred_hazard(S, "Boiler & Espresso Limescale", "HIGH") :-
+    water_state(S, "scale_forming"),
+    hardness_level(S, "very_hard").
+rule inferred_hazard(S, "Boiler & Espresso Limescale", "MODERATE") :-
+    water_state(S, "scale_forming"),
+    hardness_level(S, "hard").
+rule inferred_hazard(S, "Element Scale Efficiency Loss", "MODERATE") :-
+    water_state(S, "scale_forming"),
+    reading(S, temp, T), T > 60.
+rule inferred_hazard(S, "Espresso Extraction Drift", "MODERATE") :-
+    hardware(S, "espresso"),
+    derived(S, alkalinity, A), A > 70.
+rule inferred_hazard(S, "Espresso Extraction Drift", "MODERATE") :-
+    hardware(S, "espresso"),
+    derived(S, alkalinity, A), A < 40.
+
+rule inferred_hazard(S, "Reef Ammonia Toxicity", "CRITICAL") :-
+    hardware(S, "reef_tank"),
+    reading(S, ammonia, A), A > 0.05,
+    reading(S, ph, P), P > 8.0.
+rule inferred_hazard(S, "Hydroponic Root Burn", "HIGH") :-
+    hardware(S, "hydroponics"),
+    derived(S, ec, E), E > 2.6.
+
+rule inferred_hazard(S, "Chloramine Disinfection Byproducts", "MODERATE") :-
+    reading(S, chloramine, C), C > 0.5,
+    hardware(S, "espresso").
+rule inferred_hazard(S, "Chloramine Disinfection Byproducts", "MODERATE") :-
+    reading(S, chloramine, C), C > 0.5,
+    hardware(S, "reef_tank").
+rule inferred_hazard(S, "Residual Disinfectant Stress", "MODERATE") :-
+    reading(S, chlorine, C), C > 2.0,
+    hardware(S, "reef_tank").
+rule inferred_hazard(S, "Disinfection Byproduct Precursor", "LOW") :-
+    reading(S, chlorine, C), C > 0.0,
+    derived(S, tds, D), D > 600.
+
+rule inferred_hazard(S, "Untreated Surface Water", "HIGH") :-
+    source(S, "stream"),
+    not disinfected(S).
+rule inferred_hazard(S, "Untreated Surface Water", "HIGH") :-
+    source(S, "shallow well"),
+    not disinfected(S).
+rule inferred_hazard(S, "Unsafe Storage Contact Time", "MODERATE") :-
+    disinfected(S),
+    reading(S, turbidity_after, T), T > 5.0.
+
+% ── strata 3: routing — what the human should physically do ──────────────────
+
+rule action(S, "BOIL 1 MIN ROLLING BOIL") :-
+    inferred_hazard(S, "Pathogen Shielding (Crypto/Giardia)", _).
+rule action(S, "BOIL OR DISINFECT BEFORE DRINKING") :-
+    inferred_hazard(S, "Untreated Surface Water", _).
+rule action(S, "FLUSH COLD TAP 90 s + NSF-53 FILTER") :-
+    inferred_hazard(S, "Lead & Copper Pipe Leaching", _).
+rule action(S, "USE BOTTLED WATER FOR INFANTS") :-
+    inferred_hazard(S, "Agricultural Nitrate Runoff", "CRITICAL").
+rule action(S, "DESCALE WITH CITRIC ACID / BLEND RO") :-
+    inferred_hazard(S, "Boiler & Espresso Limescale", _).
+rule action(S, "PRIME + WATER CHANGE") :-
+    inferred_hazard(S, "Reef Ammonia Toxicity", _).
+
+% ── strata 4: sealing / verdict rollup ───────────────────────────────────────
+% Severity ranks keep the rollup monotone (0 = clean … 4 = CRITICAL), so the
+% stratum stays acyclic and the fixpoint remains well-founded.
+
+rule severity_rank(S, 4) :- inferred_hazard(S, _, "CRITICAL").
+rule severity_rank(S, 3) :- inferred_hazard(S, _, "HIGH").
+rule severity_rank(S, 2) :- inferred_hazard(S, _, "MODERATE").
+rule severity_rank(S, 1) :- inferred_hazard(S, _, "LOW").
+rule worst_rank(S, 4) :- severity_rank(S, 4).
+rule worst_rank(S, 3) :- severity_rank(S, 3), not severity_rank(S, 4).
+rule worst_rank(S, 2) :- severity_rank(S, 2), not severity_rank(S, 4), not severity_rank(S, 3).
+rule worst_rank(S, 1) :- severity_rank(S, 1), not severity_rank(S, 2), not severity_rank(S, 3), not severity_rank(S, 4).
+rule worst_rank(S, 0) :- reading(S, ntu, _), not severity_rank(S, 1), not severity_rank(S, 2), not severity_rank(S, 3), not severity_rank(S, 4).
+
+rule seal_level(S, "CRITICAL") :- worst_rank(S, 4).
+rule seal_level(S, "HIGH") :- worst_rank(S, 3).
+rule seal_level(S, "MODERATE") :- worst_rank(S, 2).
+rule seal_level(S, "LOW") :- worst_rank(S, 1).
+rule seal_level(S, "PASS") :- worst_rank(S, 0).
