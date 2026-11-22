@@ -43,11 +43,11 @@ npm run build:apk
 
 Or run **Build Android and web bundle** in GitHub Actions (also runs on main pushes). It installs dependencies, compiles WASM, builds the web app, syncs Capacitor and runs Gradle `assembleDebug`. The installable **debug-signed** APK is copied to `public/releases/aquaspectra-release.apk`, with a SHA-256 manifest; a second web build includes it in `dist/releases/`. Download the workflow artifact for both the APK and deployable website. Production distribution needs a securely managed release signing key and appropriate target-SDK updates; no signing secrets are committed.
 
-**No APK has been compiled in this sandbox** (Android SDK/Java unavailable). Until the workflow runs and its output is deployed, the download engine returns a clearly named **source `.zip`**, not a fake `.apk`. That ZIP is not installable and is not a replacement for Gradle output. The QR opens the web app. Once present, the real APK is downloaded with the requested `AquaSpectra-HydroLab-v1.0.0.apk` filename.
+**A real installable APK is bundled** at `public/releases/aquaspectra-release.apk` (about 3.9 MB). GitHub Actions built it and verified its Android signature; its exact size and SHA-256 are recorded in `public/releases/manifest.json`. The header button downloads it as `AquaSpectra-HydroLab-v1.0.0.apk`. The QR opens the web app. The APK is debug-signed for sideloading, not a Play Store release; a future build with a different debug key may require uninstalling the old app first (export local data before uninstalling). A source ZIP is used only if the bundled APK is missing; that ZIP is not installable. Physical-device installation is not yet tested.
 
 ## Vercel
 
-`vercel.json` selects Vite, `npm run build`, and `dist`. Import this repository into a Vercel project to deploy the web app. To self-host the APK, deploy the **second** `dist` build produced by the Android workflow, or include its generated `public/releases/` artifacts in your deployment source. A regular Git-based Vercel build does not automatically fetch GitHub Actions artifacts. No production deployment has been made by this session.
+`vercel.json` selects Vite, `npm run build`, and `dist`. The repository is connected to the Vercel **aqua-spectra** project at https://aqua-spectra.vercel.app. To self-host the APK, deploy the **second** `dist` build produced by the Android workflow, or include its generated `public/releases/` artifacts in your deployment source. The verified APK is now checked into this branch, so a regular Git-based Vercel build includes it automatically. The workflow can refresh the bundled binary on this working branch; main builds upload artifacts without directly pushing to main.
 
 ## Offline and storage
 
