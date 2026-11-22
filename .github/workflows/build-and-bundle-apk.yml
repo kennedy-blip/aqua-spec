@@ -3,8 +3,11 @@ on:
   workflow_dispatch:
   push:
     branches: [main, "arena/13ab9d29-aqua-spec"]
+    paths-ignore:
+      - 'public/releases/**'
+      - 'README.md' 
 permissions:
-  contents: read
+  contents: write
 jobs:
   android:
     runs-on: ubuntu-latest
@@ -20,8 +23,18 @@ jobs:
           java-version: '21'
       - name: Prepare runner Android SDK
         run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          sdkmanager "platforms;android-34" "build-tools;34.0.0"
+          set -o pipefail
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "::notice::SDK=$SDK Java=$JAVA_HOME"
+          if [ ! -x "$SDK/cmdline-tools/latest/bin/sdkmanager" ]; then
+            mkdir -p "$SDK/cmdline-tools"
+            curl -fL https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o /tmp/cmdline.zip
+            unzip -q /tmp/cmdline.zip -d /tmp/android-tools
+            mv /tmp/android-tools/cmdline-tools "$SDK/cmdline-tools/latest"
+          fi
+          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$SDK/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0"
       - run: npm ci
       - run: npm test
       - run: npm run build:wasm
@@ -37,3 +50,13 @@ jobs:
             public/releases/
             dist/
           retention-days: 30
+      - name: Bundle verified APK into source branch
+        if: github.ref == 'refs/heads/arena/13ab9d29-aqua-spec'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/releases/aquaspectra-release.apk public/releases/manifest.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Bundle verified Android APK for one-tap download [skip ci]"
+            git push origin HEAD:arena/13ab9d29-aqua-spec
+          fi
